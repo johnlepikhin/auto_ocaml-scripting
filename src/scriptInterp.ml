@@ -31,13 +31,15 @@ end
 
 type pc = int
 
+type sp = int
+
 type state = {
   code : Instruct.instruction array;
   mutable pc : pc;
   stack : Obj.t array;
-  mutable sp : int;
+  mutable sp : sp;
   mutable accu : Obj.t;
-  mutable trapSp : Obj.t array;
+  mutable trapSp : sp;
   mutable extraArgs : int;
   mutable env : Obj.t;
   mutable global : Global.t;
@@ -93,11 +95,15 @@ let rec value_of_constant v =
     aux 0 lst;
     block
 
+external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
+
 let eval_extfunc1 name a1 =
   match name, a1 with
   | "print_endline", a1 ->
     print_endline (Obj.obj a1);
     Obj.repr ()
+  | "caml_set_oo_id", a1 ->
+    Obj.repr (set_id (Obj.obj a1))
   | _ ->
     print_endline "(unregistered function)";
     Obj.repr ()
@@ -149,7 +155,7 @@ let init ~stackSize instr =
     stack;
     sp = stackSize - 1;
     accu = Obj.repr ();
-    trapSp = [||];
+    trapSp = -1;
     extraArgs = 0;
     env = Obj.repr ();
     global = Global.init ();
@@ -350,6 +356,27 @@ let step state =
     raise Exit
 
   | Instruct.Kcheck_signals ->
+    state.pc <- state.pc + 1;
+
+  | Instruct.Kraise kind ->
+    if state.trapSp >= 0 then (
+      state.sp <- state.trapSp;
+      state.pc <- Obj.obj (A.get state.stack state.sp);
+      state.trapSp <- Obj.obj (A.get state.stack (state.sp+1));
+      state.env <- Obj.obj (A.get state.stack (state.sp+2));
+      state.extraArgs <- Obj.obj (A.get state.stack (state.sp+3));
+      state.sp <- state.sp + 4
+    ) else (
+      raise (failwith ("Raised exception: " ^ (Obj.obj (Obj.field state.accu 0))))
+    )
+
+  | Instruct.Kpushtrap lbl ->
+    state.sp <- state.sp - 4;
+    A.unsafe_set state.stack state.sp (Obj.repr (state.labels.(lbl-1)));
+    A.unsafe_set state.stack (state.sp + 1) (Obj.repr state.trapSp);
+    A.unsafe_set state.stack (state.sp + 2) (Obj.repr state.env);
+    A.unsafe_set state.stack (state.sp + 3) (Obj.repr state.extraArgs);
+    state.trapSp <- state.sp;
     state.pc <- state.pc + 1;
 
   | _ ->

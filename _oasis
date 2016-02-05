@@ -12,3 +12,16 @@ Library ocaml_scripting
   Modules: ScriptInterp, ScriptParse
   BuildDepends: compiler-libs.bytecomp, compiler-libs.common, compiler-libs
 
+Executable test_basic
+  Path: tests
+  Install: false
+  MainIs: test_basic.ml
+  BuildDepends: ocaml_scripting
+
+Executable debugging
+  Path: tests
+  Install: false
+  MainIs: debug.ml
+  BuildDepends: ocaml_scripting
+
+
