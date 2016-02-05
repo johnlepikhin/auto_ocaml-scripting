@@ -1,0 +1,15 @@
+OASISFormat: 0.4
+Name: ocaml-ast
+Version: 1.0
+License: BSD-3-clause
+Authors: Evgenii Lepikhin
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+Synopsis: Security Scanner
+
+Library ocaml-scripting
+  Path: src
+  Install: false
+  CompiledObject: best
+  BuildDepends: compiler-libs.bytecomp, compiler-libs.common, compiler-libs
+
