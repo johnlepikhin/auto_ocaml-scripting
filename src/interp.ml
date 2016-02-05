@@ -32,16 +32,16 @@ end
 type pc = int
 
 type state = {
-  code : Instruct.instruction BatArray.t;
+  code : Instruct.instruction array;
   mutable pc : pc;
-  stack : Obj.t BatArray.t;
+  stack : Obj.t array;
   mutable sp : int;
   mutable accu : Obj.t;
-  mutable trapSp : Obj.t BatDynArray.t;
+  mutable trapSp : Obj.t array;
   mutable extraArgs : int;
   mutable env : Obj.t;
   mutable global : Global.t;
-  labels : pc BatArray.t;
+  labels : pc array;
 }
 
 let rec value_of_constant v =
@@ -70,10 +70,14 @@ let rec value_of_constant v =
   | Const_block (tag, lst) ->
     let len = List.length lst in
     let block = Obj.new_block tag len in
-    BatList.iteri (fun pos v ->
+    let rec aux pos = function
+      | [] -> ()
+      | v :: tl ->
         let v = value_of_constant v in
-        Obj.set_field block pos v
-      ) lst;
+        Obj.set_field block pos v;
+        aux (pos+1) tl
+    in
+    aux 0 lst;
     block
   | _ ->
     print_endline "eval: Kconst ERROR 1";
@@ -126,16 +130,16 @@ let init ~stackSize instr =
   in
   let newinstr = aux 0 instr in
   let len = List.length !lst in
-  let labels = BatArray.make len 0 in
-  List.iter (fun (lbl, pc) -> BatArray.unsafe_set labels (lbl-1) pc) !lst;
-  let stack = BatArray.init stackSize (fun id -> Obj.repr ()) in
+  let labels = Array.make len 0 in
+  List.iter (fun (lbl, pc) -> Array.unsafe_set labels (lbl-1) pc) !lst;
+  let stack = Array.init stackSize (fun id -> Obj.repr ()) in
   {
-    code = BatArray.of_list newinstr;
+    code = Array.of_list newinstr;
     pc = 0;
     stack;
     sp = stackSize - 1;
     accu = Obj.repr ();
-    trapSp = BatDynArray.create ();
+    trapSp = [||];
     extraArgs = 0;
     env = Obj.repr ();
     global = Global.init ();
@@ -144,7 +148,7 @@ let init ~stackSize instr =
 
 let reset state =
   state.pc <- 0;
-  state.sp <- (BatArray.length state.stack) - 1;
+  state.sp <- (Array.length state.stack) - 1;
   state.accu <- Obj.repr ();
   state.extraArgs <- 0;
   state.env <- Obj.repr ();
@@ -154,7 +158,7 @@ exception Stack_overflow
 
 let step state =
   let open Instruct in
-  let module A = BatArray in
+  let module A = Array in
   let stack_push v =
     if state.sp = 0 then (
       raise Stack_overflow;
@@ -163,7 +167,7 @@ let step state =
       A.unsafe_set state.stack state.sp v
     )
   in
-  match BatArray.unsafe_get state.code state.pc with
+  match Array.unsafe_get state.code state.pc with
   | Instruct.Kacc n ->
     state.accu <- A.unsafe_get state.stack (state.sp + n);
     state.pc <- state.pc + 1;
@@ -343,7 +347,7 @@ let step state =
     raise Exit
 
 let interp state =
-  let codelen = BatArray.length state.code in
+  let codelen = Array.length state.code in
   while state.pc < codelen do
     step state;
   done
