@@ -79,9 +79,19 @@ let rec value_of_constant v =
     in
     aux 0 lst;
     block
-  | _ ->
-    print_endline "eval: Kconst ERROR 1";
-    raise Exit
+  | Const_immstring s ->
+    Obj.repr s
+  | Const_float_array lst ->
+    let len = List.length lst in
+    let block = Obj.new_block Obj.double_array_tag len in
+    let rec aux pos = function
+      | [] -> ()
+      | v :: tl ->
+        Obj.set_field block pos (Obj.repr v);
+        aux (pos+1) tl
+    in
+    aux 0 lst;
+    block
 
 let eval_extfunc1 name a1 =
   match name, a1 with
