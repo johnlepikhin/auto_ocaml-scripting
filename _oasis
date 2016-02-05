@@ -9,6 +9,6 @@ Synopsis: Security Scanner
 
 Library ocaml_scripting
   Path: src
-  Modules: Interp
+  Modules: ScriptInterp, ScriptParse
   BuildDepends: compiler-libs.bytecomp, compiler-libs.common, compiler-libs
 
