@@ -4,19 +4,16 @@ module Global =
 struct
   module StringMap = Map.Make(String)
 
-  type field = Obj.t
-  
   type t = (Ident.t, Obj.t) Hashtbl.t
 
-  let global : t = Hashtbl.create 101
-
-  let get ident =
+  let get global ident =
     Obj.repr (Hashtbl.find global ident)
 
-  let set ident block =
+  let set global ident block =
     Hashtbl.replace global ident block
 
   let init () =
+    let global : t = Hashtbl.create 101 in
     let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty in
     let getvalue name =
       try
@@ -28,7 +25,8 @@ struct
       toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
     in
     let toploop = Obj.repr (getvalue, setvalue) in
-    Hashtbl.add global (Ident.create "Toploop") toploop
+    Hashtbl.add global (Ident.create "Toploop") toploop;
+    global
 end
 
 type pc = int
@@ -42,7 +40,7 @@ type state = {
   mutable trapSp : Obj.t BatDynArray.t;
   mutable extraArgs : int;
   mutable env : Obj.t;
-  mutable global : unit;
+  mutable global : Global.t;
   labels : pc BatArray.t;
 }
 
@@ -140,7 +138,7 @@ let init ~stackSize instr =
     trapSp = BatDynArray.create ();
     extraArgs = 0;
     env = Obj.repr ();
-    global = ();
+    global = Global.init ();
     labels;
   }
 
@@ -149,8 +147,8 @@ let reset state =
   state.sp <- (BatArray.length state.stack) - 1;
   state.accu <- Obj.repr ();
   state.extraArgs <- 0;
-  state.env <- Obj.repr ()
-;;
+  state.env <- Obj.repr ();
+  state.global <- Global.init ();
 
 exception Stack_overflow
 
@@ -267,7 +265,7 @@ let step state =
     state.pc <- state.pc + 1;
 
   | Instruct.Ksetglobal id ->
-    Global.set id state.accu;
+    Global.set state.global id state.accu;
     state.accu <- Obj.repr ();
     state.pc <- state.pc + 1;
     
@@ -343,3 +341,9 @@ let step state =
   | _ ->
     Printf.printf "other opcode\n";
     raise Exit
+
+let interp state =
+  let codelen = BatArray.length state.code in
+  while state.pc < codelen do
+    step state;
+  done
