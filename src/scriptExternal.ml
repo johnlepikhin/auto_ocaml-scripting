@@ -37,7 +37,6 @@ let world_of_externals ?initial ?(additional="") fns =
   in
   let script = List.map script_of_external fns |> String.concat "" in
   let script = script ^ "\n" ^ additional in
-  print_endline script;
   let script = init ~env ~fileName:"external_functions" ~moduleName:"External" script in
   let parsed = parse script in
   let compiled = compile parsed in
