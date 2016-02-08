@@ -19,7 +19,7 @@ let script_of_external fn =
   in
   Printf.sprintf "external %s: %s -> %s = \"%s\";;\n" fn.fn_name args fn.fn_return ext_name
 
-let world_of_externals ?initial ?(additional="") fns =
+let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
   let world, env = match initial with
     | None ->
       let world = ScriptInterp.{
@@ -36,7 +36,7 @@ let world_of_externals ?initial ?(additional="") fns =
       world, env
   in
   let script = List.map script_of_external fns |> String.concat "" in
-  let script = script ^ "\n" ^ additional in
+  let script = prefix ^ "\n" ^ script ^ "\n" ^ suffix in
   let script = init ~env ~fileName:"external_functions" ~moduleName:"External" script in
   let parsed = parse script in
   let compiled = compile parsed in
