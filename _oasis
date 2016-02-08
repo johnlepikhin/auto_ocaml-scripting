@@ -17,13 +17,13 @@ Executable test_basic
   Install: false
   CompiledObject: best
   MainIs: test_basic.ml
-  BuildDepends: ocaml_scripting
+  BuildDepends: ocaml_scripting, pcre
 
 Executable debugging
   Path: tests
   Install: false
   CompiledObject: best
   MainIs: debug.ml
-  BuildDepends: ocaml_scripting
+  BuildDepends: ocaml_scripting, pcre
 
 

@@ -2,20 +2,23 @@
 open ScriptParse
 
 let external_fns = ScriptInterp.[
-    { fn_name = "print_endline";
-      fn_args = ["string"];
-      fn_return = "unit";
-      fn = Obj.repr print_endline;
-      fn_ext_name = None;
-    };
+    ext_fn "pcre_regexp" ["string"] "regexp" (Obj.repr ( Pcre.regexp ));
+    ext_fn "pcre_match" ["regexp"; "string"] "bool" (Obj.repr ( Pcre.pmatch ));
+    ext_fn "print" ["string"] "unit" (Obj.repr ( print_endline ));
 ]
 
-let (world, env) = ScriptExternal.world_of_externals external_fns
+let (world, env) =
+  ScriptExternal.world_of_externals
+    ~prefix:"type regexp"
+    external_fns
 
 let script = init ~env ~fileName:"main" ~moduleName:"Main" "
 
-print_endline \"test\";
+let rex = pcre_regexp \"substring\";;
 
+let () =
+    if pcre_match rex \"111 substring 222\" then
+      print \"match!\"
 "
 
 

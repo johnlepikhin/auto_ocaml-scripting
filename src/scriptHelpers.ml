@@ -10,12 +10,12 @@ let addCompositions initial = ScriptExternal.world_of_externals ~initial ScriptI
   ]    
 
 let addComparsions initial =
-  let additional = "
+  let suffix = "
 let min x y = if x <= y then x else y
 let max x y = if x >= y then x else y
 "    
   in
-  ScriptExternal.world_of_externals ~initial ~additional ScriptInterp.[
+  ScriptExternal.world_of_externals ~initial ~suffix ScriptInterp.[
       ext_fn ~fn_ext_name:"%equal" "( = )" ["'a"; "'a"] "bool" (Obj.repr ( = ));
       ext_fn ~fn_ext_name:"%notequal" "( <> )" ["'a"; "'a"] "bool" (Obj.repr ( <> ));
       ext_fn ~fn_ext_name:"%lessthan" "( < )" ["'a"; "'a"] "bool" (Obj.repr ( < ));
@@ -42,12 +42,12 @@ let addBoolean initial =
     ]
 
 let addIntegers initial =
-  let additional = "
+  let suffix = "
 let abs x = if x >= 0 then x else -x
 
 "
   in
-  ScriptExternal.world_of_externals ~initial ~additional ScriptInterp.[
+  ScriptExternal.world_of_externals ~initial ~suffix ScriptInterp.[
       ext_fn ~fn_ext_name:"%negint" "( ~- )" ["int"] "int" (Obj.repr ( ~- ));
       ext_fn ~fn_ext_name:"%identity" "( ~+ )" ["int"] "int" (Obj.repr ( ~+ ));
       ext_fn ~fn_ext_name:"%succint" "succ" ["int"] "int" (Obj.repr ( succ ));

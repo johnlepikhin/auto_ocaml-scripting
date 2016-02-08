@@ -1,4 +1,4 @@
 S src/**
 B _build/**
 PKG compiler-libs.common
-PKG batteries
+PKG pcre

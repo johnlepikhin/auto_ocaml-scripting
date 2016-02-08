@@ -1,33 +1,32 @@
 
 open ScriptParse
 
-let world, env = ScriptExternal.world_of_externals ScriptInterp.[
-    { fn_name = "print_endline";
-      fn_args = ["string"];
-      fn_return = "unit";
-      fn = Obj.repr print_endline;
-      fn_ext_name = None;
-    };
+let external_fns = ScriptInterp.[
+    ext_fn "pcre_regexp" ["string"] "regexp" (Obj.repr (fun rex -> Pcre.regexp rex));
+    ext_fn "pcre_regexp_or" ["string list"] "regexp" (Obj.repr ( Pcre.regexp_or ));
+    ext_fn "pcre_match" ["regexp"; "string"] "bool" (Obj.repr (fun rex s -> Pcre.pmatch ~rex s));
+    ext_fn "print" ["string"] "unit" (Obj.repr print_endline);
 ]
 
-let world, env =
-  ScriptHelpers.addComparsions (world, env)
-  |> ScriptHelpers.addExceptions
-  |> ScriptHelpers.addIntegers
+let initial = ScriptHelpers.addComparsions ScriptExternal.empty
+
+let (world, env) =
+  ScriptExternal.world_of_externals ~initial
+    ~prefix:"type regexp"
+    external_fns
 
 let script = init ~env ~fileName:"main" ~moduleName:"Main" "
 
-exception Exit
+let pmatch rex =
+    let rex1 = pcre_regexp rex in
+    fun s ->
+      pcre_match rex1 s
+;;
 
-let () =
-  try
-    let z = 1 + 2 in
-    print_endline \"before raising exception\";
-    raise Exit
-  with
-  | Exit -> print_endline \"catched!\"
-
+if pmatch \".*?substr\" \"substring\" then
+ print \"match\"
 "
+
 
 let print_lambda t =
   print_endline "-- Lambda -----------------------";
