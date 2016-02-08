@@ -25,10 +25,16 @@ let init ?(env=Env.initial_unsafe_string) ~fileName ~moduleName script = {
   fileName;
 }
 
-let parse source =
+let parse ?mapper source =
   try
     let lexbuf = Lexing.from_string source.script in
     let tree = Parse.implementation lexbuf in
+    let tree =
+      match mapper with
+      | None -> tree
+      | Some mapper ->
+        mapper.Ast_mapper.structure mapper tree
+    in
     let loc = Location.in_file source.fileName in
     let (str, sg, newenv) = Typemod.type_structure source.env tree loc in
     let lambda = Translmod.transl_implementation source.moduleName (str, Typedtree.Tcoerce_none) in
