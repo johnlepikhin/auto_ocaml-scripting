@@ -298,7 +298,7 @@ let step state =
       stack_push state.accu;
     state.accu <- Obj.new_block Obj.closure_tag (1 + nvars);
     for i=0 to nvars-1 do
-      Obj.set_field state.accu (i+1) (A.unsafe_get state.stack i);
+      Obj.set_field state.accu (i+1) (A.unsafe_get state.stack (state.sp+i));
     done;
     Obj.set_field state.accu 0 (Obj.repr state.labels.(lbl-1));
     state.sp <- state.sp + nvars;
@@ -312,13 +312,15 @@ let step state =
   | Instruct.Kbranch lbl ->
     state.pc <- state.labels.(lbl-1)
 
-  | Instruct.Kbranchif lbl ->
+  | Instruct.Kbranchif lbl
+  | Instruct.Kstrictbranchif lbl ->
     if Obj.obj state.accu <> false then
       state.pc <- state.labels.(lbl-1)
     else
       state.pc <- state.pc + 1;
 
-  | Instruct.Kbranchifnot lbl ->
+  | Instruct.Kbranchifnot lbl
+  | Instruct.Kstrictbranchifnot lbl ->
     if Obj.obj state.accu = false then
       state.pc <- state.labels.(lbl-1)
     else
@@ -340,14 +342,14 @@ let step state =
           state.sp <- state.sp + 1;
           let fn : 'a -> 'b -> 'c = Obj.magic fn in
           Obj.repr (fn (Obj.obj arg1) (Obj.obj arg2))
-          )
+        )
       | 3 -> (
           let arg2 = A.unsafe_get state.stack state.sp in
-          let arg3 = A.unsafe_get state.stack state.sp in
+          let arg3 = A.unsafe_get state.stack (state.sp+1) in
           state.sp <- state.sp + 2;
           let fn : 'a -> 'b -> 'c -> 'd = Obj.magic fn in
           Obj.repr (fn (Obj.obj arg1) (Obj.obj arg2) (Obj.obj arg3))
-          )
+        )
       | _ ->
         fail "External functions with arity > 3 are not supported"
     in
