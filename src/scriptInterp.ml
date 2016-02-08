@@ -33,6 +33,27 @@ type pc = int
 
 type sp = int
 
+type external_fn = {
+  fn_name : string;
+  fn_args: string list;
+  fn_return: string;
+  fn : Obj.t;
+  fn_ext_name : string option;
+}
+
+let ext_fn ?fn_ext_name fn_name fn_args fn_return fn = {
+  fn_name;
+  fn_args;
+  fn_return;
+  fn;
+  fn_ext_name;
+}
+
+type world = {
+  external_fns : external_fn list;
+  mutable global : Global.t;
+}
+
 type state = {
   code : Instruct.instruction array;
   mutable pc : pc;
@@ -42,8 +63,8 @@ type state = {
   mutable trapSp : sp;
   mutable extraArgs : int;
   mutable env : Obj.t;
-  mutable global : Global.t;
   labels : pc array;
+  world : world;
 }
 
 let rec value_of_constant v =
@@ -95,28 +116,7 @@ let rec value_of_constant v =
     aux 0 lst;
     block
 
-external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
-
-let eval_extfunc1 name a1 =
-  match name, a1 with
-  | "print_endline", a1 ->
-    print_endline (Obj.obj a1);
-    Obj.repr ()
-  | "caml_set_oo_id", a1 ->
-    Obj.repr (set_id (Obj.obj a1))
-  | _ ->
-    print_endline "(unregistered function)";
-    Obj.repr ()
-    
-let eval_extfunc2 name a1 a2 =
-  match name, a1, a2 with
-  | "caml_format_int", a1, a2 ->
-    Obj.repr (string_of_int (Obj.obj a2))
-  | _ ->
-    print_endline "(unregistered function)";
-    raise Exit
-
-let init ~stackSize instr =
+let init ~stackSize ~world instr =
   let lst = ref [] in
   let rec aux pos = function
     | [] -> []
@@ -141,6 +141,23 @@ let init ~stackSize instr =
       in
       Instruct.Kintcomp (Obj.magic op) :: aux (pos+1) tl
 
+    | Instruct.Kccall ("raise", args) :: tl -> (
+        Instruct.Kraise Lambda.Raise_notrace :: aux (pos+1) tl
+      )
+    | Instruct.Kccall (fn, args) :: tl -> (
+        try
+          let fn = List.find (fun efn -> efn.fn_name = fn) world.external_fns in
+          if List.length fn.fn_args <> args then (
+            Printf.printf "Invalid number of arguments for external function: %s\n" fn.fn_name;
+            raise Exit
+          );
+          Instruct.Kccall ((Obj.magic fn.fn), args) :: aux (pos+1) tl
+        with
+        | Not_found ->
+          Printf.printf "Undefined external function: %s\n" fn;
+          raise Exit
+      )
+
     | hd :: tl ->
       hd :: aux (pos+1) tl
   in
@@ -158,8 +175,8 @@ let init ~stackSize instr =
     trapSp = -1;
     extraArgs = 0;
     env = Obj.repr ();
-    global = Global.init ();
     labels;
+    world;
   }
 
 let reset state =
@@ -167,8 +184,7 @@ let reset state =
   state.sp <- (Array.length state.stack) - 1;
   state.accu <- Obj.repr ();
   state.extraArgs <- 0;
-  state.env <- Obj.repr ();
-  state.global <- Global.init ();
+  state.env <- Obj.repr ()
 
 exception Stack_overflow
 
@@ -285,7 +301,7 @@ let step state =
     state.pc <- state.pc + 1;
 
   | Instruct.Ksetglobal id ->
-    Global.set state.global id state.accu;
+    Global.set state.world.global id state.accu;
     state.accu <- Obj.repr ();
     state.pc <- state.pc + 1;
     
@@ -313,12 +329,20 @@ let step state =
       let arg1 = state.accu in
       match params with
       | 1 ->
-        eval_extfunc1 fn arg1
+        let fn : 'a -> 'b = Obj.magic fn in
+        Obj.repr (fn (Obj.obj arg1))
       | 2 -> (
           let arg2 = A.unsafe_get state.stack state.sp in
           state.sp <- state.sp + 1;
-          
-          eval_extfunc2 fn arg1 arg2
+          let fn : 'a -> 'b -> 'c = Obj.magic fn in
+          Obj.repr (fn (Obj.obj arg1) (Obj.obj arg2))
+          )
+      | 3 -> (
+          let arg2 = A.unsafe_get state.stack state.sp in
+          let arg3 = A.unsafe_get state.stack state.sp in
+          state.sp <- state.sp + 2;
+          let fn : 'a -> 'b -> 'c -> 'd = Obj.magic fn in
+          Obj.repr (fn (Obj.obj arg1) (Obj.obj arg2) (Obj.obj arg3))
           )
       | _ ->
         print_endline "Error 3 calling Kcall";
@@ -379,6 +403,11 @@ let step state =
     state.trapSp <- state.sp;
     state.pc <- state.pc + 1;
 
+  | Instruct.Kpoptrap ->
+    state.trapSp <- state.sp;
+    state.sp <- state.sp + 4;
+    state.pc <- state.pc + 1;
+    
   | _ ->
     Printf.printf "other opcode\n";
     raise Exit

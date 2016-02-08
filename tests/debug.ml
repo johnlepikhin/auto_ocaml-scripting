@@ -1,17 +1,32 @@
 
 open ScriptParse
 
-let script = "
+let world, env = ScriptExternal.world_of_externals ScriptInterp.[
+    { fn_name = "print_endline";
+      fn_args = ["string"];
+      fn_return = "unit";
+      fn = Obj.repr print_endline;
+      fn_ext_name = None;
+    };
+]
+
+let world, env =
+  ScriptHelpers.addComparsions (world, env)
+  |> ScriptHelpers.addExceptions
+  |> ScriptHelpers.addIntegers
+
+let script = init ~env ~fileName:"main" ~moduleName:"Main" "
 
 exception Exit
 
-external print_endline: string -> unit = \"print_endline\"
-
 let () =
   try
+    let z = 1 + 2 in
+    print_endline \"before raising exception\";
     raise Exit
   with
-  | _ -> print_endline \"cached!\"
+  | Exit -> print_endline \"catched!\"
+
 "
 
 let print_lambda t =
@@ -30,17 +45,12 @@ let print_instr t =
   Format.pp_print_flush fmt ();
   Buffer.contents b |> print_endline
 
-let initial = init ~fileName:"main" ~moduleName:"Main" ""
-
-let with_basic = env_basic initial
-
 let () =
-  let source = { with_basic with script } in
-  let parsed = parse source in
+  let parsed = parse script in
   print_lambda parsed.lambda;
   let compiled = compile parsed in
   let open ScriptInterp in
-  let state = init ~stackSize:1000 compiled.instr in
+  let state = init ~world ~stackSize:1000 compiled.instr in
   let codelen = Array.length state.code in
   let instr = Bytegen.compile_implementation parsed.source.moduleName parsed.lambda in
   print_instr instr;
