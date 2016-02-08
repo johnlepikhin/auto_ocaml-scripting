@@ -1,4 +1,10 @@
 
+exception Stack_overflow
+exception Raise_exn of string
+exception Error of string
+
+let fail s =
+  raise (Error s)
 
 module Global =
 struct
@@ -19,7 +25,7 @@ struct
       try
         StringMap.find name !toplevel_value_bindings
       with Not_found ->
-        raise (failwith (name ^ " unbound at toplevel"))
+        fail (name ^ " unbound at toplevel")
     in
     let setvalue name v =
       toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
@@ -148,14 +154,14 @@ let init ~stackSize ~world instr =
         try
           let fn = List.find (fun efn -> efn.fn_name = fn) world.external_fns in
           if List.length fn.fn_args <> args then (
-            Printf.printf "Invalid number of arguments for external function: %s\n" fn.fn_name;
-            raise Exit
+            Printf.sprintf "Invalid number of arguments for external function: %s" fn.fn_name
+            |> fail
           );
           Instruct.Kccall ((Obj.magic fn.fn), args) :: aux (pos+1) tl
         with
         | Not_found ->
-          Printf.printf "Undefined external function: %s\n" fn;
-          raise Exit
+          Printf.sprintf "Undefined external function: %s" fn
+          |> fail
       )
 
     | hd :: tl ->
@@ -185,8 +191,6 @@ let reset state =
   state.accu <- Obj.repr ();
   state.extraArgs <- 0;
   state.env <- Obj.repr ()
-
-exception Stack_overflow
 
 let step state =
   let open Instruct in
@@ -345,8 +349,7 @@ let step state =
           Obj.repr (fn (Obj.obj arg1) (Obj.obj arg2) (Obj.obj arg3))
           )
       | _ ->
-        print_endline "Error 3 calling Kcall";
-        raise Exit
+        fail "External functions with arity > 3 are not supported"
     in
     state.accu <- result;
     state.pc <- state.pc + 1;
@@ -376,8 +379,7 @@ let step state =
     state.pc <- state.pc + 1;
 
   | Instruct.Klabel _ ->
-    Printf.printf "unexpected label opcode\n";
-    raise Exit
+    fail "unexpected label opcode"
 
   | Instruct.Kcheck_signals ->
     state.pc <- state.pc + 1;
@@ -391,7 +393,7 @@ let step state =
       state.extraArgs <- Obj.obj (A.get state.stack (state.sp+3));
       state.sp <- state.sp + 4
     ) else (
-      raise (failwith ("Raised exception: " ^ (Obj.obj (Obj.field state.accu 0))))
+      raise (Raise_exn ("Raised exception: " ^ (Obj.obj (Obj.field state.accu 0))))
     )
 
   | Instruct.Kpushtrap lbl ->
@@ -409,8 +411,7 @@ let step state =
     state.pc <- state.pc + 1;
     
   | _ ->
-    Printf.printf "other opcode\n";
-    raise Exit
+    fail "unsupported opcode"
 
 let interp state =
   let codelen = Array.length state.code in
