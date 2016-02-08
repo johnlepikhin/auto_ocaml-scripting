@@ -19,6 +19,13 @@ Executable test_basic
   MainIs: test_basic.ml
   BuildDepends: ocaml_scripting, pcre
 
+Executable test_mapper
+  Path: tests
+  Install: false
+  CompiledObject: best
+  MainIs: test_mapper.ml
+  BuildDepends: ocaml_scripting
+
 Executable debugging
   Path: tests
   Install: false
