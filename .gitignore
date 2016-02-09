@@ -1,0 +1,13 @@
+setup.data
+setup.ml
+setup.log
+myocamlbuild.ml
+_tags
+_build
+Makefile
+configure
+*.byte
+*.native
+src/META
+src/*.mllib
+src/*.mldylib
