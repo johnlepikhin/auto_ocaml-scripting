@@ -1,11 +1,13 @@
 OASISFormat: 0.4
 Name: ocaml-ast
-Version: 1.0
+Version: 0.1
 License: BSD-3-clause
 Authors: Evgenii Lepikhin
 BuildTools: ocamlbuild
 Plugins: META (0.4), DevFiles (0.4)
-Synopsis: Security Scanner
+Synopsis: Ocaml scripting
+Description:
+  Simple API to create scripts on Ocaml. Includes bytecode interpreter.
 
 Library ocaml_scripting
   Path: src
