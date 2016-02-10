@@ -36,7 +36,7 @@ let parse ?mapper source =
         mapper.Ast_mapper.structure mapper tree
     in
     let loc = Location.in_file source.fileName in
-    let (str, sg, newenv) = Typemod.type_structure source.env tree loc in
+    let (str, _, newenv) = Typemod.type_structure source.env tree loc in
     let lambda = Translmod.transl_implementation source.moduleName (str, Typedtree.Tcoerce_none) in
     let lambda = Simplif.simplify_lambda lambda in
     {

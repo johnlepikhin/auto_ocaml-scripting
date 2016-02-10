@@ -3,7 +3,7 @@ open ScriptParse
 
 let empty =
   let world = ScriptInterp.{
-      external_fns = [];
+      external_fns = ScriptInterp.ExtMap.empty;
       global = Global.init ();
     }
   in
@@ -20,6 +20,10 @@ let script_of_external fn =
   Printf.sprintf "external %s: %s -> %s = \"%s\";;\n" fn.fn_name args fn.fn_return ext_name
 
 let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
+  let fns = List.fold_left (fun r fn ->
+      ScriptInterp.ExtMap.add fn.ScriptInterp.fn_name fn r
+    ) ScriptInterp.ExtMap.empty fns
+  in
   let world, env = match initial with
     | None ->
       let world = ScriptInterp.{
@@ -31,11 +35,15 @@ let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
     | Some (world, env) ->
       let world = ScriptInterp.{
           world with
-          external_fns = world.external_fns @ fns;
+          external_fns = ScriptInterp.ExtMap.concat world.external_fns fns;
         } in
       world, env
   in
-  let script = List.map script_of_external fns |> String.concat "" in
+  let script =
+    ScriptInterp.ExtMap.bindings fns
+    |> List.map (fun (k, v) -> script_of_external v)
+    |> String.concat ""
+  in
   let script = prefix ^ "\n" ^ script ^ "\n" ^ suffix in
   let script = init ~env ~fileName:"external_functions" ~moduleName:"External" script in
   let parsed = parse script in

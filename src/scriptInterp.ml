@@ -55,8 +55,15 @@ let ext_fn ?fn_ext_name fn_name fn_args fn_return fn = {
   fn_ext_name;
 }
 
+module ExtMap =
+struct
+  include Map.Make (String)
+
+  let concat m1 m2 = fold add m1 m2
+end
+
 type world = {
-  external_fns : external_fn list;
+  external_fns : external_fn ExtMap.t;
   mutable global : Global.t;
 }
 
@@ -72,6 +79,9 @@ type state = {
   labels : pc array;
   world : world;
 }
+
+let add_external ext world =
+  { world with external_fns = ExtMap.add ext.fn_name ext world.external_fns }
 
 let rec value_of_constant v =
   let open Lambda in
@@ -146,7 +156,7 @@ let init ~stackSize ~world instr =
         | Cge -> ( >= )
       in
       Instruct.Kintcomp (Obj.magic op) :: aux (pos+1) tl
-
+(*
     | Instruct.Kccall ("raise", args) :: tl -> (
         Instruct.Kraise Lambda.Raise_notrace :: aux (pos+1) tl
       )
@@ -163,7 +173,7 @@ let init ~stackSize ~world instr =
           Printf.sprintf "Undefined external function: %s" fn
           |> fail
       )
-
+*)
     | hd :: tl ->
       hd :: aux (pos+1) tl
   in
@@ -332,6 +342,13 @@ let step state =
 
   | Instruct.Kccall (fn, params) ->
     let result =
+      let fn =
+        try
+          let ext = ExtMap.find fn state.world.external_fns in
+          ext.fn
+        with
+        | _ -> fail (Printf.sprintf "External function %s not found" fn)
+      in
       let arg1 = state.accu in
       match params with
       | 1 ->
