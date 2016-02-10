@@ -78,6 +78,7 @@ type state = {
   mutable env : Obj.t;
   labels : pc array;
   world : world;
+  stackSize : int;
 }
 
 let add_external ext world =
@@ -193,6 +194,7 @@ let init ~stackSize ~world instr =
     env = Obj.repr ();
     labels;
     world;
+    stackSize;
   }
 
 let reset state =
@@ -201,6 +203,17 @@ let reset state =
   state.accu <- Obj.repr ();
   state.extraArgs <- 0;
   state.env <- Obj.repr ()
+
+let makeReadyCopy state =
+  { state with
+    pc = 0;
+    stack = Array.init state.stackSize (fun id -> Obj.repr ());
+    sp = state.stackSize - 1;
+    accu = Obj.repr ();
+    trapSp = -1;
+    extraArgs = 0;
+    env = Obj.repr ();
+}
 
 let step state =
   let open Instruct in
