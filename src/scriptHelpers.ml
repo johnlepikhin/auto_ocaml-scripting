@@ -36,7 +36,7 @@ let max x y = if x >= y then x else y
 
 let addBoolean initial =
   ScriptExternal.world_of_externals ~initial ScriptInterp.[
-      ext_fn ~fn_ext_name:"%boolnot" "not" ["bool"; "bool"] "bool" (Obj.repr not);
+      ext_fn ~fn_ext_name:"%boolnot" "not" ["bool"] "bool" (Obj.repr not);
       ext_fn ~fn_ext_name:"%sequand" "( && )" ["bool"; "bool"] "bool" (Obj.repr ( && ));
       ext_fn ~fn_ext_name:"%sequor" "( || )" ["bool"; "bool"] "bool" (Obj.repr ( || ));
     ]
