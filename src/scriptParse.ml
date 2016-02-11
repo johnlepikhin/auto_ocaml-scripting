@@ -25,7 +25,23 @@ let init ?(env=Env.initial_unsafe_string) ~fileName ~moduleName script = {
   fileName;
 }
 
-let parse ?mapper source =
+let print_lambda t =
+  print_endline "-- Lambda -----------------------";
+  let b = Buffer.create 100 in
+  let fmt = Format.formatter_of_buffer b in
+  Printlambda.lambda fmt t;
+  Format.pp_print_flush fmt ();
+  Buffer.contents b |> print_endline
+
+let print_instr t =
+  print_endline "-- Instructions -----------------------";
+  let b = Buffer.create 100 in
+  let fmt = Format.formatter_of_buffer b in
+  Printinstr.instrlist fmt t;
+  Format.pp_print_flush fmt ();
+  Buffer.contents b |> print_endline
+
+let parse ?(debug=false) ?mapper source =
   try
     let lexbuf = Lexing.from_string source.script in
     let tree = Parse.implementation lexbuf in
@@ -39,6 +55,8 @@ let parse ?mapper source =
     let (str, _, newenv) = Typemod.type_structure source.env tree loc in
     let lambda = Translmod.transl_implementation source.moduleName (str, Typedtree.Tcoerce_none) in
     let lambda = Simplif.simplify_lambda lambda in
+    if debug then
+      print_lambda lambda;
     {
       source = { source with env = newenv };
       lambda;
@@ -65,8 +83,10 @@ let parse ?mapper source =
     let error = Buffer.contents b in
     raise (Error (error, loc))
 
-let compile t =
+let compile ?(debug=false) t =
   let instr = Bytegen.compile_implementation t.source.moduleName t.lambda in
+  if debug then
+    print_instr instr;
   {
     parsed = t;
     instr;
