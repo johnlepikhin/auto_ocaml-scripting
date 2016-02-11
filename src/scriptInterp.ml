@@ -332,6 +332,10 @@ let step state =
     state.accu <- Obj.repr ();
     state.pc <- state.pc + 1;
     
+  | Instruct.Kboolnot ->
+    state.accu <- Obj.repr (not (Obj.obj state.accu));
+    state.pc <- state.pc + 1;
+    
   | Instruct.Kbranch lbl ->
     state.pc <- state.labels.(lbl-1)
 
