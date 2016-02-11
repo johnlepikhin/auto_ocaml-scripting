@@ -12,9 +12,12 @@ let (world, env) =
     ~prefix:"type regexp"
     external_fns
 
-let script = init ~env ~fileName:"main" ~moduleName:"Main" "
+let script1 = init ~fileName:"script1" "
 
 let rex = pcre_regexp \"substring\";;
+"
+
+let script2 = init ~fileName:"script2" "
 
 let () =
     if pcre_match rex \"111 substring 222\" then
@@ -23,8 +26,9 @@ let () =
 
 
 let () =
-  let parsed = parse script in
-  let compiled = compile parsed in
-  let state = ScriptInterp.init ~world ~stackSize:1000 compiled.instr in
-  ScriptInterp.interp state
-
+  wrapped ~error_cb:(Printf.printf "%s\n") (fun () ->
+      let parsed = parse ~initial_env:env ~moduleName:"Main" [script1; script2] in
+      let compiled = compile parsed in
+      let state = ScriptInterp.init ~world ~stackSize:1000 compiled.instr in
+      ScriptInterp.interp state
+    )

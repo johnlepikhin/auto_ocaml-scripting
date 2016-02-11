@@ -45,12 +45,12 @@ let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
     |> String.concat ""
   in
   let script = prefix ^ "\n" ^ script ^ "\n" ^ suffix in
-  let script = init ~env ~fileName:"external_functions" ~moduleName:"External" script in
-  let parsed = parse script in
+  let script = init ~fileName:"external_functions" script in
+  let parsed = parse ~moduleName:"External" [script] in
   let compiled = compile parsed in
   let state = ScriptInterp.init ~world ~stackSize:1000 compiled.instr in
   let open ScriptInterp in
   interp state;
-  state.world, parsed.source.env
+  state.world, parsed.env
 
 external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]

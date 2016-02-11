@@ -15,7 +15,7 @@ let (world, env) =
     ~prefix:"type regexp"
     external_fns
 
-let script = init ~env ~fileName:"main" ~moduleName:"Main" "
+let script = init ~fileName:"main" "
 
 let pmatch rex =
     let rex1 = pcre_regexp rex in
@@ -46,7 +46,7 @@ let print_instr t =
 
 let () =
   ScriptParse.wrapped ~error_cb:(Printf.eprintf "%s\n") (fun () ->
-      let parsed = parse ~debug:true script in
+      let parsed = parse ~debug:true ~moduleName:"Main" [script] in
       let compiled = compile ~debug:true parsed in
       let open ScriptInterp in
       let state = init ~world ~stackSize:1000 compiled.instr in

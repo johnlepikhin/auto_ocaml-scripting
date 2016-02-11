@@ -3,13 +3,13 @@ exception Error of string * Location.t
 
 type source = {
   script : string;
-  env : Env.t;
-  moduleName : string;
   fileName : string;
 }
 
 type parsed = {
-  source : source;
+  sources : source list;
+  env : Env.t;
+  moduleName : string;
   lambda : Lambda.lambda;
 }
 
@@ -18,10 +18,8 @@ type compiled = {
   instr : Instruct.instruction list;
 }
 
-let init ?(env=Env.initial_unsafe_string) ~fileName ~moduleName script = {
+let init ~fileName script = {
   script;
-  env;
-  moduleName;
   fileName;
 }
 
@@ -41,27 +39,45 @@ let print_instr t =
   Format.pp_print_flush fmt ();
   Buffer.contents b |> print_endline
 
-let parse ?(debug=false) ?mapper source =
+let parse ?(debug=false) ?(initial_env=Env.initial_unsafe_string) ?mapper ~moduleName sources =
   try
-    let lexbuf = Lexing.from_string source.script in
-    Location.init lexbuf source.fileName;
-    let loc = Location.curr lexbuf in
-    let tree = Parse.implementation lexbuf in
-    let tree =
-      match mapper with
-      | None -> tree
-      | Some mapper ->
-        mapper.Ast_mapper.structure mapper tree
+    let str = List.fold_left (fun prev source ->
+        let lexbuf = Lexing.from_string source.script in
+        Location.init lexbuf source.fileName;
+        let loc = Location.curr lexbuf in
+        let tree = Parse.implementation lexbuf in
+        let tree =
+          match mapper with
+          | None -> tree
+          | Some mapper ->
+            mapper.Ast_mapper.structure mapper tree
+        in
+        match prev with
+        | None ->
+          let (str, _, _) = Typemod.type_structure initial_env tree loc in
+          Some str
+        | Some prev ->
+          let (str, _, _) = Typemod.type_structure prev.Typedtree.str_final_env tree loc in
+          Some (Typedtree.{ str with str_items = prev.str_items @ str.str_items })
+      ) None sources
     in
-    let (str, _, newenv) = Typemod.type_structure source.env tree loc in
-    let lambda = Translmod.transl_implementation source.moduleName (str, Typedtree.Tcoerce_none) in
-    let lambda = Simplif.simplify_lambda lambda in
-    if debug then
-      print_lambda lambda;
-    {
-      source = { source with env = newenv };
-      lambda;
-    }
+    let r =
+      match str with
+      | None ->
+        raise (Error ("No sources defined", Location.in_file "[scripts list]"))
+      | Some str ->
+        let lambda = Translmod.transl_implementation moduleName (str, Typedtree.Tcoerce_none) in
+        let lambda = Simplif.simplify_lambda lambda in
+        if debug then
+          print_lambda lambda;
+        {
+          sources;
+          env = str.Typedtree.str_final_env;
+          moduleName;
+          lambda;
+        }
+    in
+    r
   with
   | exn ->
     let b = Buffer.create 100 in
@@ -88,7 +104,7 @@ let parse ?(debug=false) ?mapper source =
     raise (Error (error, loc))
 
 let compile ?(debug=false) t =
-  let instr = Bytegen.compile_implementation t.source.moduleName t.lambda in
+  let instr = Bytegen.compile_implementation t.moduleName t.lambda in
   if debug then
     print_instr instr;
   {

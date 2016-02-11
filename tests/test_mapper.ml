@@ -103,7 +103,7 @@ let external_fns = ScriptInterp.[
 
 let (world, env) = ScriptExternal.world_of_externals ~prefix:"type regexp" external_fns
 
-let script = init ~env ~fileName:"main" ~moduleName:"Main" "
+let script = init ~fileName:"main" "
 
 let r = regexp \"asd\" \"zzz\"
 ;;
@@ -112,7 +112,7 @@ let r = regexp \"asd\" \"zzz\"
 
 
 let () =
-  let parsed = parse ~mapper:Mapper.my_mapper script in
+  let parsed = parse ~initial_env:env ~mapper:Mapper.my_mapper ~moduleName:"Test" [script] in
   let compiled = compile parsed in
   let state = ScriptInterp.init ~world ~stackSize:1000 compiled.instr in
   ScriptInterp.interp state
