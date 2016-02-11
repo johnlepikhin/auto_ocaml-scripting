@@ -96,6 +96,9 @@ let parse ?(debug=false) ?(initial_env=Env.initial_unsafe_string) ?mapper ~modul
       | Location.Error error ->
         Location.report_error fmt error;
         error.Location.loc
+      | Lexer.Error (error, loc) ->
+        Lexer.report_error fmt error;
+        loc
       | _ ->
         raise exn
     in
