@@ -121,6 +121,7 @@ let wrapped ~error_cb fn =
     let (file, bline, bchar) = get_pos_info loc.loc_start in
     let (_, eline, echar) = get_pos_info loc.loc_end in
     let msg =
-      Printf.sprintf "Error in %s at line %i, chars %i-%i: %s" file bline bchar echar msg
+      Printf.sprintf
+        "Error in %s at line %i, chars from %i to %i: %s" file bline bchar echar msg
     in
     error_cb msg
