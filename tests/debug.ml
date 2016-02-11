@@ -45,22 +45,11 @@ let print_instr t =
   Buffer.contents b |> print_endline
 
 let () =
-  let parsed = parse script in
-  print_lambda parsed.lambda;
-  let compiled = compile parsed in
-  let open ScriptInterp in
-  let state = init ~world ~stackSize:1000 compiled.instr in
-  let codelen = Array.length state.code in
-  let instr = Bytegen.compile_implementation parsed.source.moduleName parsed.lambda in
-  print_instr instr;
-  reset state;
-  while state.pc < codelen do
-    Printf.printf "--- pc=%i/%i, sp=%i, extraArgs=%i ---\n"
-      state.pc
-      codelen
-      state.sp
-      state.extraArgs;
-    flush_all ();
-
-    step state;
-  done
+  ScriptParse.wrapped ~error_cb:(Printf.eprintf "%s\n") (fun () ->
+      let parsed = parse ~debug:true script in
+      let compiled = compile ~debug:true parsed in
+      let open ScriptInterp in
+      let state = init ~world ~stackSize:1000 compiled.instr in
+      reset state;
+      interp_debug state
+    )
