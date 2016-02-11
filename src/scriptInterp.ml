@@ -450,3 +450,16 @@ let interp state =
   while state.pc < codelen do
     step state;
   done
+
+let interp_debug state =
+  let codelen = Array.length state.code in
+  while state.pc < codelen do
+    Printf.printf "--- NEXT instruction: pc=%i/%i, sp=%i, extraArgs=%i ---\n"
+      state.pc
+      codelen
+      state.sp
+      state.extraArgs;
+    flush_all ();
+
+    step state;
+  done
