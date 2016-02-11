@@ -76,6 +76,9 @@ let parse ?(debug=false) ?mapper source =
       | Typecore.Error (loc, env, err) ->
         Typecore.report_error env fmt err;
         loc
+      | Location.Error error ->
+        Location.report_error fmt error;
+        error.Location.loc
       | _ ->
         raise exn
     in
