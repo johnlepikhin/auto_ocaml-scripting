@@ -24,7 +24,7 @@ let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
       ScriptInterp.ExtMap.add fn.ScriptInterp.fn_name fn r
     ) ScriptInterp.ExtMap.empty fns
   in
-  let world, env = match initial with
+  let world, initial_env = match initial with
     | None ->
       let world = ScriptInterp.{
           external_fns = fns;
@@ -46,7 +46,7 @@ let world_of_externals ?initial ?(prefix="") ?(suffix="") fns =
   in
   let script = prefix ^ "\n" ^ script ^ "\n" ^ suffix in
   let script = init ~fileName:"external_functions" script in
-  let parsed = parse ~moduleName:"External" [script] in
+  let parsed = parse ~initial_env ~moduleName:"External" [script] in
   let compiled = compile parsed in
   let state = ScriptInterp.init ~world ~stackSize:1000 compiled.instr in
   let open ScriptInterp in
