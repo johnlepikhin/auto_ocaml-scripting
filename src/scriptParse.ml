@@ -44,6 +44,8 @@ let print_instr t =
 let parse ?(debug=false) ?mapper source =
   try
     let lexbuf = Lexing.from_string source.script in
+    Location.init lexbuf source.fileName;
+    let loc = Location.curr lexbuf in
     let tree = Parse.implementation lexbuf in
     let tree =
       match mapper with
@@ -51,7 +53,6 @@ let parse ?(debug=false) ?mapper source =
       | Some mapper ->
         mapper.Ast_mapper.structure mapper tree
     in
-    let loc = Location.in_file source.fileName in
     let (str, _, newenv) = Typemod.type_structure source.env tree loc in
     let lambda = Translmod.transl_implementation source.moduleName (str, Typedtree.Tcoerce_none) in
     let lambda = Simplif.simplify_lambda lambda in
@@ -94,3 +95,16 @@ let compile ?(debug=false) t =
     parsed = t;
     instr;
   }
+
+let wrapped ~error_cb fn =
+  try
+    fn ()
+  with
+  | Error (msg, loc) ->
+    let open Location in
+    let (file, bline, bchar) = get_pos_info loc.loc_start in
+    let (_, eline, echar) = get_pos_info loc.loc_end in
+    let msg =
+      Printf.sprintf "Error in %s at line %i, chars %i-%i: %s" file bline bchar echar msg
+    in
+    error_cb msg
