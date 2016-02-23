@@ -29,6 +29,18 @@ let max x y = if x >= y then x else y
       ext_fn "caml_string_greaterequal" ["string"; "string"] "bool" (Obj.repr ( >= ));
       ext_fn "caml_string_lessequal" ["string"; "string"] "bool" (Obj.repr ( <= ));
 
+      ext_fn "caml_equal" ["'a"; "'a"] "bool" (Obj.repr ( = ));
+      ext_fn "caml_greaterthan" ["'a"; "'a"] "bool" (Obj.repr ( > ));
+      ext_fn "caml_lessthan" ["'a"; "'a"] "bool" (Obj.repr ( < ));
+      ext_fn "caml_greaterequal" ["'a"; "'a"] "bool" (Obj.repr ( >= ));
+      ext_fn "caml_lessequal" ["'a"; "'a"] "bool" (Obj.repr ( <= ));
+
+      ext_fn "caml_gt_equal" ["float"; "float"] "bool" (Obj.repr ( = ));
+      ext_fn "caml_gt_greaterthan" ["float"; "float"] "bool" (Obj.repr ( > ));
+      ext_fn "caml_gt_lessthan" ["float"; "float"] "bool" (Obj.repr ( < ));
+      ext_fn "caml_gt_greaterequal" ["float"; "float"] "bool" (Obj.repr ( >= ));
+      ext_fn "caml_gt_lessequal" ["float"; "float"] "bool" (Obj.repr ( <= ));
+
       ext_fn ~fn_ext_name:"%eq" "( == )" ["bool"; "bool"] "bool" (Obj.repr ( == ));
       ext_fn ~fn_ext_name:"%noteq" "( != )" ["bool"; "bool"] "bool" (Obj.repr ( != ));
 
