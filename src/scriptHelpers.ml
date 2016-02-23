@@ -35,11 +35,8 @@ let max x y = if x >= y then x else y
       ext_fn "caml_greaterequal" ["'a"; "'a"] "bool" (Obj.repr ( >= ));
       ext_fn "caml_lessequal" ["'a"; "'a"] "bool" (Obj.repr ( <= ));
 
-      ext_fn "caml_gt_equal" ["float"; "float"] "bool" (Obj.repr ( = ));
-      ext_fn "caml_gt_greaterthan" ["float"; "float"] "bool" (Obj.repr ( > ));
-      ext_fn "caml_gt_lessthan" ["float"; "float"] "bool" (Obj.repr ( < ));
-      ext_fn "caml_gt_greaterequal" ["float"; "float"] "bool" (Obj.repr ( >= ));
-      ext_fn "caml_gt_lessequal" ["float"; "float"] "bool" (Obj.repr ( <= ));
+      ext_fn "caml_gt_float" ["float"; "float"] "bool" (Obj.repr ( > ));
+      ext_fn "caml_lt_float" ["float"; "float"] "bool" (Obj.repr ( < ));
 
       ext_fn ~fn_ext_name:"%eq" "( == )" ["bool"; "bool"] "bool" (Obj.repr ( == ));
       ext_fn ~fn_ext_name:"%noteq" "( != )" ["bool"; "bool"] "bool" (Obj.repr ( != ));
