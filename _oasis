@@ -1,6 +1,6 @@
 OASISFormat: 0.4
 Name: ocaml-ast
-Version: 0.1
+Version: 1.0
 License: BSD-3-clause
 Authors: Evgenii Lepikhin
 BuildTools: ocamlbuild
